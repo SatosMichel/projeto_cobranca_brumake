@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Entrada da Empresa Devedora{% endblock %}
+{% block content %}
+    <h1>Empresa Devedora dará entrada?</h1>
+    <form method="post">
+        <div class="form-row">
+            <label for="entrada">Haverá entrada?</label>
+            <select id="entrada" name="entrada" required>
+                <option value="sim">Sim</option>
+                <option value="nao">Não</option>
+            </select>
+        </div>
+        <div class="form-row" id="valor_entrada_div" style="display:none;">
+            <label for="valor_entrada">Valor da Entrada:</label>
+            <input type="text" id="valor_entrada" name="valor_entrada" maxlength="15" oninput="mascaraMoeda(this)">
+        </div>
+        <div class="button-row">
+            <button type="submit">Próximo</button>
+            <a href="/valor_juros" style="text-decoration:none;"><button type="button" style="background:#F28A1C;color:#fff;">Voltar</button></a>
+        </div>
+    </form>
+    <script>
+        const entradaSelect = document.getElementById('entrada');
+        const valorEntradaDiv = document.getElementById('valor_entrada_div');
+        entradaSelect.addEventListener('change', function() {
+            valorEntradaDiv.style.display = this.value === 'sim' ? 'flex' : 'none';
+        });
+        window.onload = function() {
+            valorEntradaDiv.style.display = entradaSelect.value === 'sim' ? 'flex' : 'none';
+        };
+        function mascaraMoeda(campo) {
+            let valor = campo.value.replace(/\D/g, "");
+            valor = (parseInt(valor, 10) / 100).toFixed(2);
+            campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+            campo.value = 'R$ ' + campo.value;
+        }
+    </script>
+{% endblock %}

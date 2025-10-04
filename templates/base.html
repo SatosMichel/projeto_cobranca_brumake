@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema de Acordos{% endblock %}</title>
+    <style>
+        body {
+            background: #F5F5F5;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            margin: 30px auto 80px auto;
+            max-width: 600px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #4F4F4F33;
+            padding: 32px 24px 24px 24px;
+        }
+        h1, h2 {
+            color: #215132;
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #F28A1C;
+            padding-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        label {
+            color: #215132;
+            font-weight: bold;
+            display: block;
+            text-align: left;
+            margin-bottom: 4px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .form-row {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        input, select {
+            font-size: 1em;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #F28A1C;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
+        .button-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        button {
+            background: #215132;
+            color: #fff;
+            border: none;
+            border-bottom: 3px solid #F28A1C;
+            border-radius: 4px;
+            padding: 10px 24px;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.2s, border 0.2s;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #F28A1C;
+            border-bottom: 3px solid #215132;
+            transform: scale(1.05);
+        }
+        button:active {
+            background: #4F4F4F;
+            border-bottom: 3px solid #F28A1C;
+            transform: scale(0.97);
+        }
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            background: #215132;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0 6px 0;
+            font-size: 1em;
+            z-index: 100;
+        }
+        .footer .social {
+            margin-top: 6px;
+        }
+        .footer .social a {
+            display: inline-block;
+            margin: 0 6px;
+            background: #F28A1C;
+            color: #fff;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+            text-align: center;
+            font-size: 1.2em;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .footer .social a:hover {
+            background: #4F4F4F;
+            transform: scale(1.1);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="footer">
+        Desenvolvido por Michel S Rebouças.<br>
+        <div class="social">
+            <a href="https://www.instagram.com/satosmichel_oficial/" target="_blank" title="Instagram">&#x1F4F7;</a>
+            <a href="https://www.linkedin.com/in/michel-santos-rebou%C3%A7as-5a81b561/" target="_blank" title="LinkedIn">&#x1F465;</a>
+            <a href="https://w.app/3nrqes" target="_blank" title="WhatsApp">&#x1F4AC;</a>
+        </div>
+    </div>
+</body>
+</html>

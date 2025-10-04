@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Login - Sistema de Acordos{% endblock %}
+{% block content %}
+    <h1>Login</h1>
+    <form method="post">
+        <div class="form-row">
+            <label for="usuario">Usuário:</label>
+            <input type="text" id="usuario" name="usuario" required>
+        </div>
+        <div class="form-row">
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha" required>
+        </div>
+        <div class="button-row">
+            <button type="submit">Entrar</button>
+            <a href="/solicitar_acesso"><button type="button" style="background:#F28A1C;color:#fff;">Solicitar acesso</button></a>
+        </div>
+    </form>
+    {% if erro %}
+    <p style="color:red;text-align:center;">{{ erro }}</p>
+    {% endif %}
+{% endblock %}

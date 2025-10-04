@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Solicitar Acesso{% endblock %}
+{% block content %}
+    <h1>Solicitar Acesso</h1>
+    <form method="post">
+        <div class="form-row">
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" required>
+        </div>
+        <div class="form-row">
+            <label for="usuario">Nome de Usuário:</label>
+            <input type="text" id="usuario" name="usuario" required>
+        </div>
+        <div class="form-row">
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha" required>
+        </div>
+        <div class="form-row">
+            <label for="confirmar_senha">Confirmar Senha:</label>
+            <input type="password" id="confirmar_senha" name="confirmar_senha" required>
+        </div>
+        <div class="button-row">
+            <button type="submit">Solicitar</button>
+            <a href="/login"><button type="button" style="background:#F28A1C;color:#fff;">Voltar</button></a>
+        </div>
+    </form>
+    {% if erro %}
+    <p style="color:red;text-align:center;">{{ erro }}</p>
+    {% endif %}
+    {% if sucesso %}
+    <p style="color:green;text-align:center;">{{ sucesso }}</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Aprovação de Usuários{% endblock %}
+{% block content %}
+    <h1>Aprovação de Usuários</h1>
+    <table border="1" style="width:100%;margin-bottom:24px;border-color:#F28A1C;">
+        <tr style="background:#F28A1C;color:#fff;">
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Usuário</th>
+            <th>Status</th>
+            <th>Ativo</th>
+            <th>Ações</th>
+        </tr>
+        {% for usuario in usuarios %}
+        <tr>
+            <td>{{ usuario[0] }}</td>
+            <td>{{ usuario[1] }}</td>
+            <td>{{ usuario[2] }}</td>
+            <td>{{ usuario[3] }}</td>
+            <td>{{ usuario[4] }}</td>
+            <td>
+                <div class="button-row">
+                {% if usuario[2] != 'sup' %}
+                    {% if usuario[3] == 'pendente' %}
+                        <form method="post" action="/aprovar_usuario/{{ usuario[0] }}" style="display:inline;">
+                            <button type="submit">Aprovar</button>
+                        </form>
+                    {% endif %}
+                    {% if usuario[3] != 'bloqueado' %}
+                        <form method="post" action="/bloquear_usuario/{{ usuario[0] }}" style="display:inline;">
+                            <button type="submit" style="background:#F28A1C;color:#fff;">Bloquear</button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="/aprovar_usuario/{{ usuario[0] }}" style="display:inline;">
+                            <button type="submit">Liberar</button>
+                        </form>
+                    {% endif %}
+                    <form method="post" action="/alternar_ativo/{{ usuario[0] }}" style="display:inline;">
+                        <button type="submit">Ativo: {% if usuario[4] == 'sim' %}Sim{% else %}Não{% endif %}</button>
+                        <input type="hidden" name="novo_status" value="{% if usuario[4] == 'sim' %}não{% else %}sim{% endif %}">
+                    </form>
+                {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2 style="text-align:center;border-bottom:2px solid #F28A1C;">Usuários Logados</h2>
+    <table border="1" style="width:100%;border-color:#F28A1C;">
+        <tr style="background:#F28A1C;color:#fff;">
+            <th>Nome</th>
+            <th>Usuário</th>
+            <th>Último acesso</th>
+            <th>Tempo logado</th>
+        </tr>
+        {% for acesso in acessos %}
+        <tr>
+            <td>{{ acesso[0] }}</td>
+            <td>{{ acesso[1] }}</td>
+            <td>{{ acesso[2] }}</td>
+            <td>{{ acesso[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <div class="button-row" style="justify-content:center;margin-top:24px;">
+        <form action="/logout" method="get">
+            <button type="submit">Sair</button>
+        </form>
+    </div>
+{% endblock %}

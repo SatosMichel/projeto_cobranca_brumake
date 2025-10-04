@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Valor Nominal da Dívida{% endblock %}
+{% block content %}
+    <h1>Informe o Valor Nominal da Dívida</h1>
+    <form method="post">
+        <div class="form-row">
+            <label for="valor_nominal">Valor Nominal:</label>
+            <input type="text" id="valor_nominal" name="valor_nominal" required maxlength="15" oninput="mascaraMoeda(this)">
+        </div>
+        <div class="button-row">
+            <button type="submit">Próximo</button>
+            <a href="/" style="text-decoration:none;"><button type="button" style="background:#F28A1C;color:#fff;">Voltar</button></a>
+        </div>
+    </form>
+    <script>
+    function mascaraMoeda(campo) {
+        let valor = campo.value.replace(/\D/g, "");
+        valor = (parseInt(valor, 10) / 100).toFixed(2);
+        campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        campo.value = 'R$ ' + campo.value;
+    }
+    </script>
+{% endblock %}

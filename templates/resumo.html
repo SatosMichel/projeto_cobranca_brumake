@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Resumo do Acordo{% endblock %}
+{% block content %}
+    <h1>Resumo do Acordo</h1>
+    <table border="1" style="width:100%;margin-bottom:24px;border-color:#F28A1C;">
+        <tr style="background:#F28A1C;color:#fff;">
+            <th>Campo</th>
+            <th>Valor</th>
+        </tr>
+        <tr><td>Código da empresa</td><td>{{ codigo }}</td></tr>
+        <tr><td>Nome da empresa</td><td>{{ nome }}</td></tr>
+        <tr><td>Valor da dívida nominal</td><td>R$ {{ '%.2f' % valor_nominal }}</td></tr>
+        <tr><td>Valor da dívida em Teste_novo</td><td>R$ {{ '%.2f' % valor_juros }}</td></tr>
+        <tr><td>Valor da entrada</td><td>R$ {{ '%.2f' % valor_entrada }}</td></tr>
+        <tr><td>Valor após entrada</td><td>R$ {{ '%.2f' % valor_pos_entrada }}</td></tr>
+        <tr><td>Taxa de juros diária</td><td>{{ taxa_juros_diaria }}%</td></tr>
+        <tr><td>Taxa de juros mensal</td><td>{{ taxa_juros_mensal }}%</td></tr>
+    </table>
+    <h2>Parcelas Detalhadas</h2>
+    <table border="1" style="width:100%;border-color:#F28A1C;">
+        <tr style="background:#F28A1C;color:#fff;">
+            <th>Nº Parcela</th>
+            <th>Valor</th>
+            <th>Data de Vencimento</th>
+        </tr>
+        {% for parcela in parcelas %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>R$ {{ '%.2f' % parcela }}</td>
+            <td>{% if datas_parcelas and datas_parcelas[loop.index0] %}{{ datas_parcelas[loop.index0].split('-')[2] }}/{{ datas_parcelas[loop.index0].split('-')[1] }}/{{ datas_parcelas[loop.index0].split('-')[0] }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+        <tr><th colspan="2">Valor total das parcelas</th><th>R$ {{ '%.2f' % valor_total_parcelas }}</th></tr>
+    </table>
+    <div style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
+        <form method="post" style="margin:0;">
+            <button type="submit" name="acao" value="salvar" style="background:#215132;color:#fff;">Salvar Acordo</button>
+        </form>
+        <form method="post" style="margin:0;">
+            <button type="submit" name="acao" value="cancelar" style="background:#F28A1C;color:#fff;">Cancelar</button>
+        </form>
+        <button type="button" onclick="window.print()" style="background:#4F4F4F;color:#fff;">Imprimir</button>
+    </div>
+{% endblock %}

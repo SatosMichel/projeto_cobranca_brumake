@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Acordos Salvos{% endblock %}
+{% block content %}
+    <h1>Acordos Salvos</h1>
+    <table border="1" style="width:100%;margin-bottom:24px;border-color:#F28A1C;">
+        <tr style="background:#F28A1C;color:#fff;">
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Valor Total</th>
+            <th>Parcelas</th>
+            <th>Valor Parcela</th>
+            <th>Data do Acordo</th>
+            <th>Ações</th>
+        </tr>
+        {% for acordo in acordos %}
+        <tr>
+            <td>{{ acordo[0] }}</td>
+            <td>{{ acordo[1] }}</td>
+            <td>R$ {{ '%.2f'|format(acordo[2]) }}</td>
+            <td>{{ acordo[3] }}</td>
+            <td>R$ {{ '%.2f'|format(acordo[4]) }}</td>
+            <td>{{ acordo[5] }}</td>
+            <td>
+                <div class="button-row">
+                    <form action="/acordo/{{ acordo[0] }}" method="get" style="display:inline;">
+                        <button type="submit">Visualizar</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <div class="button-row" style="justify-content:center;margin-top:24px;">
+        <form action="/" method="get">
+            <button type="submit">Voltar</button>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Valor da Dívida com Juros{% endblock %}
+{% block content %}
+    <h1>Informe o Valor da Dívida com Juros</h1>
+    <form method="post">
+        <div class="form-row">
+            <label for="valor_juros">Valor com Juros:</label>
+            <input type="text" id="valor_juros" name="valor_juros" required maxlength="15" oninput="mascaraMoeda(this)">
+        </div>
+        <div class="button-row">
+            <button type="submit">Próximo</button>
+            <a href="/valor_nominal" style="text-decoration:none;"><button type="button" style="background:#F28A1C;color:#fff;">Voltar</button></a>
+        </div>
+    </form>
+    <script>
+    function mascaraMoeda(campo) {
+        let valor = campo.value.replace(/\D/g, "");
+        valor = (parseInt(valor, 10) / 100).toFixed(2);
+        campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        campo.value = 'R$ ' + campo.value;
+    }
+    </script>
+{% endblock %}

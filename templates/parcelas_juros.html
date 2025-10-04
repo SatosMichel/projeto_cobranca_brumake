@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Parcelas e Taxa de Juros{% endblock %}
+{% block content %}
+    <h1>Informe a Quantidade de Parcelas, Taxa de Juros e Datas</h1>
+    <form method="post">
+        <div class="form-row">
+            <label for="parcelas">Quantidade de Parcelas:</label>
+            <input type="number" id="parcelas" name="parcelas" required min="1" max="36" onchange="gerarCamposDatas()">
+        </div>
+        <div class="form-row">
+            <label for="taxa_juros">Taxa de Juros (% ao mês):</label>
+            <input type="number" step="0.01" id="taxa_juros" name="taxa_juros" required>
+        </div>
+        <div id="datas_parcelas"></div>
+        <div class="button-row">
+            <button type="submit">Calcular</button>
+        </div>
+    </form>
+    <script>
+    function gerarCamposDatas() {
+        const qtd = parseInt(document.getElementById('parcelas').value);
+        const container = document.getElementById('datas_parcelas');
+        container.innerHTML = '';
+        if (!isNaN(qtd) && qtd > 0) {
+            for (let i = 1; i <= qtd; i++) {
+                container.innerHTML += `<div class='form-row'><label>Data da parcela ${i}:</label><input type='date' name='data_parcela_${i}' required></div>`;
+            }
+        }
+    }
+    window.onload = gerarCamposDatas;
+    </script>
+{% endblock %}

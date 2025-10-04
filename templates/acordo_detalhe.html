@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes do Acordo{% endblock %}
+{% block content %}
+    <h1>Detalhes do Acordo</h1>
+    <table border="1" style="width:100%;margin-bottom:24px;border-color:#F28A1C;">
+        <tr style="background:#F28A1C;color:#fff;">
+            <th>Campo</th>
+            <th>Valor</th>
+        </tr>
+        <tr><td>Código da empresa</td><td>{{ acordo['id'] }}</td></tr>
+        <tr><td>Nome da empresa</td><td>{{ acordo['nome'] }}</td></tr>
+        <tr><td>Valor da dívida nominal</td><td>R$ {{ '%.2f' % acordo['valor_nominal'] }}</td></tr>
+        <tr><td>Valor da dívida em {{ acordo['data_acordo'] }}</td><td>R$ {{ '%.2f' % acordo['valor_juros'] }}</td></tr>
+        <tr><td>Valor da entrada</td><td>R$ {{ '%.2f' % acordo['valor_entrada'] }}</td></tr>
+        <tr><td>Valor após entrada</td><td>R$ {{ '%.2f' % acordo['valor_base'] }}</td></tr>
+        <tr><td>Taxa de juros diária</td><td>{{ acordo['taxa_juros_diaria'] }}%</td></tr>
+        {% for valor in acordo['lista_parcelas'] %}
+        <tr><td>{{ loop.index }} parcela</td><td>R$ {{ '%.2f' % valor }} {% if acordo['datas_parcelas'] and acordo['datas_parcelas'][loop.index0] %}<br>Data: {{ acordo['datas_parcelas'][loop.index0].split('-')[2] }}/{{ acordo['datas_parcelas'][loop.index0].split('-')[1] }}/{{ acordo['datas_parcelas'][loop.index0].split('-')[0] }}{% endif %}</td></tr>
+        {% endfor %}
+        <tr><th>Valor total das parcelas</th><th>R$ {{ '%.2f' % acordo['valor_total_parcelas'] }}</th></tr>
+    </table>
+    <div class="button-row" style="display:flex;gap:16px;justify-content:center;">
+        <a href="/acordos"><button type="button" style="background:#215132;color:#fff;">Voltar</button></a>
+        <button type="button" style="background:#F28A1C;color:#fff;" onclick="window.print()">Imprimir</button>
+        <button type="button" style="background:#d32f2f;color:#fff;" onclick="abrirPopupExcluir()">Excluir</button>
+    </div>
+    <div style="display:flex;justify-content:center;margin-top:16px;">
+        <form method="post" action="/gerar_instrumento/{{ acordo['id'] }}">
+            <button type="submit" style="background:#215132;color:#fff;">Gerar Instrumento</button>
+        </form>
+    </div>
+    <div id="popup-excluir" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);justify-content:center;align-items:center;z-index:100;">
+        <div style="background:#fff;padding:32px;border-radius:8px;box-shadow:0 2px 8px #000;max-width:320px;margin:auto;">
+            <h3>Confirme a senha do SUP</h3>
+            <form method="post" action="/excluir_acordo/{{ acordo['id'] }}" onsubmit="return validarSenhaSup()">
+                <input type="password" id="senha_sup" name="senha_sup" placeholder="Digite a senha" required style="width:100%;margin-bottom:16px;">
+                <div style="display:flex;gap:8px;justify-content:center;">
+                    <button type="submit" style="background:#d32f2f;color:#fff;">Confirmar Exclusão</button>
+                    <button type="button" onclick="fecharPopupExcluir()" style="background:#4F4F4F;color:#fff;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+    function abrirPopupExcluir() {
+        document.getElementById('popup-excluir').style.display = 'flex';
+    }
+    function fecharPopupExcluir() {
+        document.getElementById('popup-excluir').style.display = 'none';
+    }
+    function validarSenhaSup() {
+        var senha = document.getElementById('senha_sup').value;
+        if (!senha || senha.length < 4) {
+            alert('Digite a senha do SUP.');
+            return false;
+        }
+        return true;
+    }
+    </script>
+{% endblock %}

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Instrumento Particular de Confissão de Dívida</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { text-align: center; }
+        .clausula { margin-top: 24px; }
+        .assinaturas { margin-top: 48px; display: flex; justify-content: space-between; }
+        .assinatura { width: 45%; text-align: center; }
+        .testemunhas { margin-top: 32px; }
+        .testemunha { margin-bottom: 24px; }
+        .dados { margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <h1>INSTRUMENTO PARTICULAR DE CONFISSÃO DE DÍVIDA</h1>
+    <div class="dados">
+        <p><strong>CREDOR:</strong> {{ nome_credor }}, CNPJ nº {{ cnpj_credor }}, endereço: {{ endereco_credor }}.</p>
+        <p><strong>DEVEDOR:</strong> {{ nome_devedor }}, CNPJ nº {{ cnpj_devedor }}, endereço: {{ endereco_devedor }}.</p>
+    </div>
+    <div class="clausula">
+        <strong>CLÁUSULA PRIMEIRA – DO OBJETO DA DÍVIDA</strong>
+        <p>O DEVEDOR confessa e reconhece, de forma irrevogável e irretratável, ser devedor do CREDOR pela quantia líquida, certa e exigível de <strong>R$ {{ valor_total_divida }} ({{ valor_total_por_extenso }})</strong>.</p>
+        <p>O débito reconhecido tem origem em {{ origem_divida }} ocorrida em {{ data_origem_divida }}.</p>
+    </div>
+    <div class="clausula">
+        <strong>CLÁUSULA SEGUNDA – DA FORMA DE PAGAMENTO</strong>
+        <p>O DEVEDOR se compromete a pagar a dívida da seguinte forma:</p>
+        <ul>
+            <li>Em {{ parcelas_quantidade }} parcelas mensais e consecutivas, nos seguintes valores e datas:</li>
+            {% for parcela in parcelas %}
+            <li>{{ parcela.numero }}ª Parcela de R$ {{ parcela.valor }} ({{ parcela.valor_por_extenso }}) com vencimento para: {{ parcela.data_vencimento }}</li>
+            {% endfor %}
+            <li>Os pagamentos serão efetuados por {{ forma_pagamento }}.</li>
+        </ul>
+    </div>
+    <div class="clausula">
+        <strong>CLÁUSULA TERCEIRA – DA MORA E MULTA</strong>
+        <ul>
+            <li>Multa de {{ percentual_multa }} sobre o valor da parcela em atraso.</li>
+            <li>Juros de Mora de {{ percentual_juros }} ao mês.</li>
+            <li>Em caso de atraso superior a {{ dias_antecipacao }} dias, o vencimento de todas as parcelas subsequentes será antecipado, tornando-se a dívida integralmente exigível.</li>
+        </ul>
+    </div>
+    <div class="clausula">
+        Salvador, {{ dia }} de {{ mes }} de {{ ano }}.
+    </div>
+    <div class="assinaturas">
+        <div class="assinatura">
+            ________________________________________<br>
+            {{ nome_credor }}
+        </div>
+        <div class="assinatura">
+            ________________________________________<br>
+            {{ nome_devedor }}
+        </div>
+    </div>
+    <div class="testemunhas">
+        <div class="testemunha">
+            1. ________________________________________<br>
+            Nome: _________________________________________ RG: _______________________________
+        </div>
+        <div class="testemunha">
+            2. ________________________________________<br>
+            Nome: _________________________________________ RG: _______________________________
+        </div>
+    </div>
+</body>
+</html>
