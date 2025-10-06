@@ -7,13 +7,14 @@
             <th>Campo</th>
             <th>Valor</th>
         </tr>
-        <tr><td>Código da empresa</td><td>{{ acordo['id'] }}</td></tr>
+    <tr><td>Código da empresa</td><td>{{ acordo.get('codigo_devedor') if acordo.get('codigo_devedor') else acordo['id'] }}</td></tr>
         <tr><td>Nome da empresa</td><td>{{ acordo['nome'] }}</td></tr>
         <tr><td>Valor da dívida nominal</td><td>R$ {{ '%.2f' % acordo['valor_nominal'] }}</td></tr>
         <tr><td>Valor da dívida em {{ acordo['data_acordo'] }}</td><td>R$ {{ '%.2f' % acordo['valor_juros'] }}</td></tr>
         <tr><td>Valor da entrada</td><td>R$ {{ '%.2f' % acordo['valor_entrada'] }}</td></tr>
         <tr><td>Valor após entrada</td><td>R$ {{ '%.2f' % acordo['valor_base'] }}</td></tr>
-        <tr><td>Taxa de juros diária</td><td>{{ acordo['taxa_juros_diaria'] }}%</td></tr>
+    <tr><td>Taxa de juros diária</td><td>{{ acordo['taxa_juros_diaria'] }}%</td></tr>
+    <tr><td>Taxa de juros mensal</td><td>{{ acordo['taxa_juros_mensal'] }}%</td></tr>
         {% for valor in acordo['lista_parcelas'] %}
         <tr><td>{{ loop.index }} parcela</td><td>R$ {{ '%.2f' % valor }} {% if acordo['datas_parcelas'] and acordo['datas_parcelas'][loop.index0] %}<br>Data: {{ acordo['datas_parcelas'][loop.index0].split('-')[2] }}/{{ acordo['datas_parcelas'][loop.index0].split('-')[1] }}/{{ acordo['datas_parcelas'][loop.index0].split('-')[0] }}{% endif %}</td></tr>
         {% endfor %}

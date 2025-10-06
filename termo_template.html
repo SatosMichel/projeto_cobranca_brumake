@@ -4,49 +4,90 @@
     <meta charset="UTF-8">
     <title>Instrumento Particular de Confissão de Dívida</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { text-align: center; }
-        .clausula { margin-top: 24px; }
-        .assinaturas { margin-top: 48px; display: flex; justify-content: space-between; }
+        /* Base */
+        body { font-family: Arial, sans-serif; margin: 40px; font-size: 12px; line-height: 1.15; }
+        h1 { text-align: center; font-size: 16px; margin-bottom: 8px; }
+        /* Espaçamento entre cláusulas (maior apenas antes do título) */
+        .clausula { margin-top: 30px; }
+        .clausula strong { display: block; margin-bottom: 8px; }
+        /* Reduzir espaçamento entre linhas de texto e itens para melhor densidade */
+        p { margin: 4px 0; }
+        .dados { margin-bottom: 8px; }
+        ul { margin: 6px 0 8px 18px; padding: 0; }
+        li { margin: 4px 0; }
+        /* Assinaturas e testemunhas com espaçamento maior (títulos/rodapé) */
+        .assinaturas { margin-top: 40px; display: flex; justify-content: space-between; }
         .assinatura { width: 45%; text-align: center; }
-        .testemunhas { margin-top: 32px; }
-        .testemunha { margin-bottom: 24px; }
-        .dados { margin-bottom: 16px; }
+        /* Testemunhas: duas colunas com alinhamento similar às assinaturas */
+        .testemunhas { margin-top: 28px; display: flex; justify-content: space-between; }
+        .testemunha { width: 45%; text-align: center; margin-bottom: 18px; }
+        .testemunha .detalhes { margin-top: 18px; }
     </style>
 </head>
 <body>
     <h1>INSTRUMENTO PARTICULAR DE CONFISSÃO DE DÍVIDA</h1>
+
+    <p>Pelo presente instrumento particular, de um lado:</p>
     <div class="dados">
-        <p><strong>CREDOR:</strong> {{ nome_credor }}, CNPJ nº {{ cnpj_credor }}, endereço: {{ endereco_credor }}.</p>
-        <p><strong>DEVEDOR:</strong> {{ nome_devedor }}, CNPJ nº {{ cnpj_devedor }}, endereço: {{ endereco_devedor }}.</p>
+        <p><strong>CREDOR:</strong> {{ nome_credor }}, portador(a) do CNPJ nº {{ cnpj_credor }}, residente e domiciliado(a) na {{ endereco_credor }}.</p>
     </div>
+
+    <p>E, de outro lado:</p>
+    <div class="dados">
+        <p><strong>DEVEDOR:</strong> {{ nome_devedor }}, portador(a) do CNPJ nº {{ cnpj_devedor }}, residente e domiciliado(a) na {{ endereco_devedor }}.</p>
+    </div>
+
+    <p>Resolvem as partes, justas e contratadas, firmar o presente Instrumento Particular de Confissão de Dívida, que se regerá pelas seguintes cláusulas:</p>
+
     <div class="clausula">
         <strong>CLÁUSULA PRIMEIRA – DO OBJETO DA DÍVIDA</strong>
-        <p>O DEVEDOR confessa e reconhece, de forma irrevogável e irretratável, ser devedor do CREDOR pela quantia líquida, certa e exigível de <strong>R$ {{ valor_total_divida }} ({{ valor_total_por_extenso }})</strong>.</p>
-        <p>O débito reconhecido tem origem em {{ origem_divida }} ocorrida em {{ data_origem_divida }}.</p>
+        <p>1.1. O DEVEDOR confessa e reconhece, de forma irrevogável e irretratável, ser devedor do CREDOR pela quantia líquida, certa e exigível de <strong>R$ {{ valor_total_divida }} ({{ valor_total_por_extenso }})</strong>.</p>
+    <p>1.2. O débito reconhecido na cláusula 1.1 tem sua origem em duplicata (s) mercantil (is) que se encontra (am) em atraso até a data do acordo.</p>
     </div>
+
     <div class="clausula">
         <strong>CLÁUSULA SEGUNDA – DA FORMA DE PAGAMENTO</strong>
-        <p>O DEVEDOR se compromete a pagar a dívida da seguinte forma:</p>
+        <p>2.1. O DEVEDOR se compromete a pagar a dívida descrita na Cláusula Primeira da seguinte forma:</p>
         <ul>
             <li>Em {{ parcelas_quantidade }} parcelas mensais e consecutivas, nos seguintes valores e datas:</li>
             {% for parcela in parcelas %}
-            <li>{{ parcela.numero }}ª Parcela de R$ {{ parcela.valor }} ({{ parcela.valor_por_extenso }}) com vencimento para: {{ parcela.data_vencimento }}</li>
+            <li>{{ parcela.numero }}ª parcela de R$ {{ parcela.valor }} ({{ parcela.valor_por_extenso }}) com vencimento em: {{ parcela.data_vencimento }}</li>
             {% endfor %}
+            <li><strong>O valor total a ser pago será de R$ {{ parcelas_total }}, {{ parcelas_total_por_extenso }}.</strong></li>
             <li>Os pagamentos serão efetuados por {{ forma_pagamento }}.</li>
+            {% if forma_pagamento == 'Pix' %}
+            <li>Pix: {{ cnpj_credor }}</li>
+            {% endif %}
+            {% if forma_pagamento == 'Transferência' %}
+            <li>Agência: {{ agencia }} - Conta: {{ conta }}</li>
+            {% endif %}
         </ul>
     </div>
+
     <div class="clausula">
         <strong>CLÁUSULA TERCEIRA – DA MORA E MULTA</strong>
+        <p>3.1. O não pagamento de qualquer parcela na data de seu vencimento implicará na incidência de:</p>
         <ul>
-            <li>Multa de {{ percentual_multa }} sobre o valor da parcela em atraso.</li>
-            <li>Juros de Mora de {{ percentual_juros }} ao mês.</li>
+            <li>Incidirá multa moratória de {{ percentual_multa }} ({{ percentual_multa_por_extenso }}) sobre o valor da parcela inadimplida, em caso de atraso no pagamento.</li>
+            <li>Além da multa, serão aplicados juros de mora de {{ percentual_juros }} ({{ percentual_juros_por_extenso }}), calculados pro rata die, até a data do efetivo pagamento.</li>
             <li>Em caso de atraso superior a {{ dias_antecipacao }} dias, o vencimento de todas as parcelas subsequentes será antecipado, tornando-se a dívida integralmente exigível.</li>
         </ul>
     </div>
+
     <div class="clausula">
-        Salvador, {{ dia }} de {{ mes }} de {{ ano }}.
+        {% set meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'] %}
+        {% if mes is defined %}
+            {% set m_int = mes|int %}
+            {% if m_int >= 1 and m_int <= 12 %}
+                Salvador, {{ dia }} de {{ meses[m_int-1] }} de {{ ano }}.
+            {% else %}
+                Salvador, {{ dia }} de {{ mes }} de {{ ano }}.
+            {% endif %}
+        {% else %}
+            Salvador, {{ dia }} de {{ mes }} de {{ ano }}.
+        {% endif %}
     </div>
+
     <div class="assinaturas">
         <div class="assinatura">
             ________________________________________<br>
@@ -57,14 +98,15 @@
             {{ nome_devedor }}
         </div>
     </div>
+
     <div class="testemunhas">
         <div class="testemunha">
-            1. ________________________________________<br>
-            Nome: _________________________________________ RG: _______________________________
+            Testemunha 1<br><br>
+            <div class="detalhes">Assinatura: _________________________________________ &nbsp;&nbsp;&nbsp; RG: _______________________________</div>
         </div>
         <div class="testemunha">
-            2. ________________________________________<br>
-            Nome: _________________________________________ RG: _______________________________
+            Testemunha 2<br><br>
+            <div class="detalhes">Assinatura: _________________________________________ &nbsp;&nbsp;&nbsp; RG: _______________________________</div>
         </div>
     </div>
 </body>

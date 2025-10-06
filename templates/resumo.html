@@ -16,6 +16,35 @@
         <tr><td>Taxa de juros diária</td><td>{{ taxa_juros_diaria }}%</td></tr>
         <tr><td>Taxa de juros mensal</td><td>{{ taxa_juros_mensal }}%</td></tr>
     </table>
+    <h2>Forma de Pagamento</h2>
+    <form method="post" id="form_pagamento">
+        <style>
+            .payment-options { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+            .payment-option { display:flex; align-items:center; gap:8px; }
+            .bank-row { display:flex; gap:12px; align-items:center; margin-top:8px; }
+            .bank-row label { display:flex; flex-direction:column; flex:1; }
+            .bank-row input[type="text"] { width:100%; max-width:360px; padding:6px 8px; box-sizing:border-box; }
+            @media (max-width:480px) { .bank-row { flex-direction:column; } .bank-row input[type="text"] { max-width:100%; } }
+        </style>
+        <label>Forma de pagamento:</label>
+        <div class="payment-options">
+            <label class="payment-option"><input type="radio" name="forma_pagamento" value="Pix" checked><span>Pix</span></label>
+            <label class="payment-option"><input type="radio" name="forma_pagamento" value="Transferência"><span>Transferência bancária</span></label>
+        </div>
+        <div id="transferencia_fields" style="margin-top:12px;display:none;">
+            <div class="bank-row">
+                <label>Agência: <input type="text" name="agencia" /></label>
+                <label>Conta: <input type="text" name="conta" /></label>
+            </div>
+        </div>
+    </form>
+    <script>
+    document.querySelectorAll('input[name="forma_pagamento"]').forEach(r => r.addEventListener('change', function(){
+        const show = this.value === 'Transferência';
+        const tf = document.getElementById('transferencia_fields');
+        if(show){ tf.style.display = 'block'; } else { tf.style.display = 'none'; }
+    }));
+    </script>
     <h2>Parcelas Detalhadas</h2>
     <table border="1" style="width:100%;border-color:#F28A1C;">
         <tr style="background:#F28A1C;color:#fff;">
@@ -34,6 +63,9 @@
     </table>
     <div style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
         <form method="post" style="margin:0;">
+            <input type="hidden" name="forma_pagamento" id="hidden_forma" value="Pix">
+            <input type="hidden" name="agencia" id="hidden_agencia" value="">
+            <input type="hidden" name="conta" id="hidden_conta" value="">
             <button type="submit" name="acao" value="salvar" style="background:#215132;color:#fff;">Salvar Acordo</button>
         </form>
         <form method="post" style="margin:0;">
@@ -41,4 +73,15 @@
         </form>
         <button type="button" onclick="window.print()" style="background:#4F4F4F;color:#fff;">Imprimir</button>
     </div>
+    <script>
+    // Antes de submeter, sincroniza os hidden inputs com o formulário visível
+    document.querySelector('form[method="post"] button[name="acao"]').addEventListener('click', function(){
+        const forma = document.querySelector('input[name="forma_pagamento"]:checked').value;
+        document.getElementById('hidden_forma').value = forma;
+        if(forma === 'Transferência'){
+            document.getElementById('hidden_agencia').value = document.querySelector('#transferencia_fields input[name="agencia"]').value || '';
+            document.getElementById('hidden_conta').value = document.querySelector('#transferencia_fields input[name="conta"]').value || '';
+        }
+    });
+    </script>
 {% endblock %}
