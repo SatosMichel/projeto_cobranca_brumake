@@ -23,6 +23,24 @@ def corrigir_tabela():
         if 'conn' in locals() and conn:
             conn.close()
 
+    # Garantir que a coluna can_cadastrar_devedor exista (se não, tentar criá-la)
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        comando = "ALTER TABLE usuarios ADD COLUMN can_cadastrar_devedor TEXT NOT NULL DEFAULT 'nao';"
+        cursor.execute(comando)
+        conn.commit()
+    except sqlite3.OperationalError as e:
+        # coluna já existe ou outro erro de operação; silencioso
+        pass
+    except Exception:
+        pass
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
 corrigir_tabela()
 
 def criar_tabela_usuarios():
@@ -35,7 +53,8 @@ def criar_tabela_usuarios():
         usuario TEXT NOT NULL,
         senha TEXT NOT NULL,
         status TEXT NOT NULL,
-        ativo TEXT NOT NULL DEFAULT 'sim'
+        ativo TEXT NOT NULL DEFAULT 'sim',
+        can_cadastrar_devedor TEXT NOT NULL DEFAULT 'nao'
     )
     ''')
     conn.commit()
@@ -76,8 +95,14 @@ def registrar_acesso(usuario):
 def listar_usuarios():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute('SELECT id, nome, usuario, status, ativo FROM usuarios')
-    usuarios = c.fetchall()
+    # tentar retornar também o campo can_cadastrar_devedor quando presente
+    try:
+        c.execute('SELECT id, nome, usuario, status, ativo, can_cadastrar_devedor FROM usuarios')
+        usuarios = c.fetchall()
+    except sqlite3.OperationalError:
+        # fallback: retornar sem a coluna, adicionando valor default 'nao'
+        c.execute('SELECT id, nome, usuario, status, ativo FROM usuarios')
+        usuarios = [tuple(list(row) + ['nao']) for row in c.fetchall()]
     conn.close()
     return usuarios
 
@@ -101,6 +126,22 @@ def alternar_ativo(usuario_id, novo_status):
     c.execute('UPDATE usuarios SET ativo = ? WHERE id = ?', (novo_status, usuario_id))
     conn.commit()
     conn.close()
+
+
+def alternar_permissao_cadastro(usuario_id, novo_status):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('UPDATE usuarios SET can_cadastrar_devedor = ? WHERE id = ?', (novo_status, usuario_id))
+    conn.commit()
+    conn.close()
+
+def pode_cadastrar_devedor(usuario):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('SELECT can_cadastrar_devedor FROM usuarios WHERE usuario = ? LIMIT 1', (usuario,))
+    r = c.fetchone()
+    conn.close()
+    return (r and r[0] == 'sim')
 
 def consultar_acessos():
     conn = sqlite3.connect(DB_NAME)

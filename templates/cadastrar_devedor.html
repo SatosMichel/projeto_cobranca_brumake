@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Cadastrar Devedor{% endblock %}
+{% block content %}
+<h1>Cadastrar Devedor</h1>
+<div class="form-row">
+    <label for="codigo">Código do Devedor</label>
+    <input id="codigo" name="codigo" type="text" placeholder="Ex: 888" />
+</div>
+<div class="form-row">
+    <label for="nome">Nome do Devedor</label>
+    <input id="nome" name="nome" type="text" placeholder="Nome da pessoa ou empresa" />
+</div>
+<div class="form-row">
+    <label for="cnpj">CNPJ</label>
+    <input id="cnpj" name="cnpj" type="text" placeholder="Somente números" maxlength="18" />
+</div>
+<div class="form-row">
+    <label for="endereco">Endereço completo</label>
+    <input id="endereco" name="endereco" type="text" placeholder="Rua, número, bairro, cidade - UF" />
+</div>
+<div class="button-row" style="justify-content:center;">
+    <button id="btnCadastrar" onclick="onSubmit(event)" disabled>Cadastrar</button>
+    <form action="/home" method="get" style="display:inline;margin-left:12px;">
+        <button type="submit">Início</button>
+    </form>
+</div>
+
+{% if erro %}
+    <p id="msgErro" style="color:#c0392b;text-align:center;margin-top:12px;">{{ erro }}</p>
+{% endif %}
+{% if sucesso %}
+    <p id="msgSucesso" style="color:#1e8449;text-align:center;margin-top:12px;">{{ sucesso }}</p>
+{% endif %}
+
+<script>
+function updateButtonState(){
+    const codigo = document.getElementById('codigo').value.trim();
+    const nome = document.getElementById('nome').value.trim();
+    const cnpj = document.getElementById('cnpj').value.trim();
+    const endereco = document.getElementById('endereco').value.trim();
+    const btn = document.getElementById('btnCadastrar');
+    btn.disabled = !(codigo && nome && cnpj && endereco);
+}
+
+function onSubmit(e){
+    e.preventDefault();
+    // validação simples do CNPJ (apenas dígitos, 14)
+    const cnpjRaw = document.getElementById('cnpj').value.replace(/\D/g, '');
+    if (cnpjRaw.length !== 14){
+        document.getElementById('msgErro').textContent = 'CNPJ inválido. Deve conter 14 dígitos.';
+        return;
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/cadastrar_devedor';
+    ['codigo','nome','cnpj','endereco'].forEach(function(id){
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = id;
+        input.value = document.getElementById(id).value.trim();
+        form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+}
+
+['codigo','nome','cnpj','endereco'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', updateButtonState);
+});
+
+// formatador simples de CNPJ enquanto digita
+document.getElementById('cnpj').addEventListener('input', function(e){
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 14) v = v.slice(0,14);
+    let out = '';
+    if (v.length > 2) out += v.slice(0,2) + '.'; else out += v;
+    if (v.length > 5) out += v.slice(2,5) + '.'; else if (v.length > 2) out += v.slice(2);
+    if (v.length > 8) out += v.slice(5,8) + '/'; else if (v.length > 5) out += v.slice(5);
+    if (v.length > 12) out += v.slice(8,12) + '-'; else if (v.length > 8) out += v.slice(8);
+    if (v.length > 12) out += v.slice(12);
+    e.target.value = out;
+    updateButtonState();
+});
+</script>
+{% endblock %}

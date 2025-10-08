@@ -8,7 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 from utils_format import formatar_cnpj
 from database import salvar_acordo
 from utils_extenso import valor_por_extenso, numero_por_extenso, percentual_por_extenso
-from usuarios import solicitar_acesso, listar_usuarios, aprovar_usuario, bloquear_usuario, alternar_ativo
+from usuarios import solicitar_acesso, listar_usuarios, aprovar_usuario, bloquear_usuario, alternar_ativo, alternar_permissao_cadastro, pode_cadastrar_devedor
 
 app = Flask(__name__)
 # Use variável de ambiente para a secret key em vez de hardcode
@@ -54,7 +54,7 @@ def login():
         usuario = request.form['usuario']
         senha = request.form['senha']
         if usuario.lower() == 'sup' and senha == 'Miguel2@':
-            session['usuario_autenticado'] = usuario
+            session['usuario_autenticado'] = usuario.lower()
             return redirect(url_for('inicio'))
         # Verifica no banco se usuário está ativo
         import sqlite3
@@ -68,7 +68,13 @@ def login():
             if ativo != 'sim':
                 erro = 'Contate o desenvolvedor do programa.'
             elif status == 'aprovado' and senha_db == senha:
-                session['usuario_autenticado'] = usuario
+                # salvar usuário em lowercase na sessão para consistência com o DB
+                session['usuario_autenticado'] = usuario.lower()
+                try:
+                    if pode_cadastrar_devedor(usuario.lower()):
+                        return redirect(url_for('home'))
+                except Exception:
+                    pass
                 return redirect(url_for('cliente'))
             else:
                 erro = 'Usuário ou senha inválidos.'
@@ -532,6 +538,84 @@ def aprovacao_usuarios():
     else:
         return redirect(url_for('cliente'))
 
+
+@app.route('/alternar_permissao_cadastro/<int:usuario_id>', methods=['POST'])
+@login_required
+def alternar_permissao_cadastro_route(usuario_id):
+    if session.get('usuario_autenticado', '').lower() == 'sup':
+        # buscar estado atual
+        try:
+            conn = sqlite3.connect('usuarios.db')
+            c = conn.cursor()
+            c.execute('SELECT can_cadastrar_devedor FROM usuarios WHERE id = ? LIMIT 1', (usuario_id,))
+            r = c.fetchone()
+            conn.close()
+            atual = r[0] if r and r[0] else 'nao'
+        except Exception:
+            atual = 'nao'
+        novo_status = 'sim' if atual != 'sim' else 'nao'
+        alternar_permissao_cadastro(usuario_id, novo_status)
+    return redirect(url_for('aprovacao_usuarios'))
+
+
+@app.route('/home')
+@login_required
+def home():
+    usuario = session.get('usuario_autenticado', '')
+    permit_cadastrar = False
+    try:
+        permit_cadastrar = pode_cadastrar_devedor(usuario)
+    except Exception:
+        permit_cadastrar = False
+    return render_template('home.html', pode_cadastrar=permit_cadastrar)
+
+
+@app.route('/cadastrar_devedor', methods=['GET', 'POST'])
+@login_required
+def cadastrar_devedor():
+    erro = None
+    sucesso = None
+    if request.method == 'POST':
+        codigo = request.form.get('codigo', '').strip()
+        nome = request.form.get('nome', '').strip()
+        cnpj = request.form.get('cnpj', '').strip()
+        endereco = request.form.get('endereco', '').strip()
+        if not (codigo and nome and cnpj and endereco):
+            erro = 'Preencha todos os campos para cadastrar o devedor.'
+            return render_template('cadastrar_devedor.html', erro=erro)
+        try:
+            conn = sqlite3.connect('partes.db')
+            c = conn.cursor()
+            c.execute('''
+            CREATE TABLE IF NOT EXISTS devedores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo_devedor TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                cnpj TEXT NOT NULL,
+                endereco TEXT NOT NULL
+            )
+            ''')
+            # Verificar duplicatas por codigo_devedor ou cnpj
+            c.execute('SELECT 1 FROM devedores WHERE codigo_devedor = ? OR cnpj = ? LIMIT 1', (codigo, cnpj))
+            if c.fetchone():
+                conn.close()
+                erro = 'Já existe um devedor cadastrado com este código ou CNPJ.'
+                return render_template('cadastrar_devedor.html', erro=erro)
+            # formatar cnpj antes de inserir
+            try:
+                cnpj_fmt = formatar_cnpj(cnpj)
+            except Exception:
+                cnpj_fmt = cnpj
+            c.execute('INSERT INTO devedores (codigo_devedor, nome, cnpj, endereco) VALUES (?, ?, ?, ?)', (codigo, nome, cnpj, endereco))
+            conn.commit()
+            conn.close()
+            # redirecionar para /home mostrando toast de sucesso
+            return redirect(url_for('home', cadastro_sucesso='1'))
+        except Exception as e:
+            erro = f'Erro ao cadastrar devedor: {e}'
+            return render_template('cadastrar_devedor.html', erro=erro)
+    return render_template('cadastrar_devedor.html')
+
 @app.route('/aprovar_usuario/<int:usuario_id>', methods=['POST'])
 @login_required
 def aprovar_usuario_route(usuario_id):
@@ -609,7 +693,7 @@ def gerar_instrumento(acordo_id):
     # Buscar dados do acordo
     conn = sqlite3.connect('acordos.db')
     c = conn.cursor()
-    c.execute('SELECT id, nome, valor_nominal, valor_juros, valor_entrada, taxa_juros_mensal, taxa_juros_diaria, valor_total, parcelas, valor_parcela, data_acordo FROM acordos WHERE id = ?', (acordo_id,))
+    c.execute('SELECT id, nome, valor_nominal, valor_juros, valor_entrada, taxa_juros_mensal, taxa_juros_diaria, valor_total, parcelas, valor_parcela, data_acordo, codigo_devedor, codigo_credor FROM acordos WHERE id = ?', (acordo_id,))
     row = c.fetchone()
     conn.close()
     if not row:
@@ -624,17 +708,41 @@ def gerar_instrumento(acordo_id):
     if codigo_devedor:
         c.execute('SELECT nome, cnpj, endereco FROM devedores WHERE codigo_devedor = ?', (str(codigo_devedor),))
         devedor = c.fetchone()
-    if codigo_credor:
+
+    # busca de credor resiliente ao schema da tabela 'credores'
+    def _fetch_credor_by_code(cursor, code):
         try:
-            c.execute('SELECT nome, cnpj, endereco FROM credores WHERE codigo = ? OR rowid = ?', (str(codigo_credor), str(codigo_credor)))
-            credor = c.fetchone()
+            cursor.execute("PRAGMA table_info(credores)")
+            cols = [r[1] for r in cursor.fetchall()]
+            # tentar colunas comuns
+            if 'codigo' in cols:
+                cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE codigo = ? LIMIT 1', (str(code),))
+                return cursor.fetchone()
+            if 'codigo_credor' in cols:
+                cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE codigo_credor = ? LIMIT 1', (str(code),))
+                return cursor.fetchone()
+            # tentar rowid
+            try:
+                cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE rowid = ? LIMIT 1', (str(code),))
+                return cursor.fetchone()
+            except Exception:
+                pass
+            # fallback por nome
+            cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE nome LIKE ? LIMIT 1', (f'%{code}%',))
+            return cursor.fetchone()
         except Exception:
-            credor = None
-    # if not found, fallback to first credor
+            return None
+
+    if codigo_credor:
+        credor = _fetch_credor_by_code(c, codigo_credor)
+
+    # if not found, fallback to first credor (if table exists)
     if not credor:
         try:
-            c.execute('SELECT nome, cnpj, endereco FROM credores LIMIT 1')
-            credor = c.fetchone()
+            c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='credores'")
+            if c.fetchone():
+                c.execute('SELECT nome, cnpj, endereco FROM credores LIMIT 1')
+                credor = c.fetchone()
         except Exception:
             credor = None
     # Normalize credor fields in case import produced shifted/concatenated columns
@@ -677,6 +785,21 @@ def gerar_instrumento(acordo_id):
         return (nome, cnpj, endereco)
 
     nome_credor_raw, cnpj_credor_raw, endereco_credor_raw = _normalize_credor(credor)
+    # normalizar devedor também
+    def _normalize_parte_local(row):
+        return _normalize_credor(row)
+    if devedor:
+        d_nome_raw, d_cnpj_raw, d_end_raw = _normalize_parte_local(devedor)
+        nome_devedor_final = d_nome_raw or (devedor[0] if devedor else row[1])
+        try:
+            cnpj_devedor_final = formatar_cnpj(d_cnpj_raw) if d_cnpj_raw else ''
+        except Exception:
+            cnpj_devedor_final = d_cnpj_raw or ''
+        endereco_devedor_final = d_end_raw or (devedor[2] if devedor and len(devedor) > 2 else '')
+    else:
+        nome_devedor_final = row[1]
+        cnpj_devedor_final = ''
+        endereco_devedor_final = ''
     # formatar cnpj se possível
     try:
         cnpj_credor_fmt = formatar_cnpj(cnpj_credor_raw) if cnpj_credor_raw else ''
@@ -738,6 +861,21 @@ def gerar_instrumento(acordo_id):
                 })
         except Exception:
             pass
+    # calcular valores nominais, entrada e saldo após a entrada
+    try:
+        valor_nominal_num = float(row[2]) if row[2] is not None else 0.0
+    except Exception:
+        valor_nominal_num = 0.0
+    try:
+        total_divida_num = float(row[3]) if row[3] is not None else 0.0
+    except Exception:
+        total_divida_num = 0.0
+    try:
+        valor_entrada_num = float(row[4]) if row[4] is not None else 0.0
+    except Exception:
+        valor_entrada_num = 0.0
+    valor_pos_entrada_num = total_divida_num - valor_entrada_num
+
     dados_termo = {
         'nome_credor': nome_credor_raw if nome_credor_raw else (credor[0] if credor else ''),
         'cnpj_credor': cnpj_credor_fmt if cnpj_credor_fmt else (formatar_cnpj(credor[1]) if credor and len(credor) > 1 else ''),
@@ -745,25 +883,30 @@ def gerar_instrumento(acordo_id):
         'nome_devedor': devedor[0] if devedor else row[1],
         'cnpj_devedor': formatar_cnpj(devedor[1]) if devedor else '',
         'endereco_devedor': devedor[2] if devedor else '',
-    'valor_total_divida': f'{row[3]:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
-    'valor_total_por_extenso': valor_por_extenso(row[3]),
+        'valor_nominal': f'{valor_nominal_num:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'valor_total_divida': f'{total_divida_num:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'valor_total_por_extenso': valor_por_extenso(total_divida_num),
         'origem_divida': 'Acordo comercial',
         'data_origem_divida': row[10],
         'parcelas_quantidade': row[8],
         'parcelas': parcelas_list,
-    'parcelas_total': f'{parcelas_total_numeric:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
-    'parcelas_total_por_extenso': valor_por_extenso(parcelas_total_numeric),
-    'forma_pagamento': 'Pix',
-    'agencia': '',
-    'conta': '',
+        'parcelas_total': f'{parcelas_total_numeric:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'parcelas_total_por_extenso': valor_por_extenso(parcelas_total_numeric),
+        'forma_pagamento': 'Pix',
+        'agencia': '',
+        'conta': '',
         'percentual_multa': '2%',
-    'percentual_multa_por_extenso': percentual_por_extenso(2),
-    'percentual_juros': f'{row[5]:.2f}% ao mês',
-    'percentual_juros_por_extenso': percentual_por_extenso(row[5]) if row[5] else '',
+        'percentual_multa_por_extenso': percentual_por_extenso(2),
+        'percentual_juros': f'{row[5]:.2f}% ao mês',
+        'percentual_juros_por_extenso': percentual_por_extenso(row[5]) if row[5] else '',
         'dias_antecipacao': '30',
         'dia': row[10].split('-')[2],
         'mes': row[10].split('-')[1],
         'ano': row[10].split('-')[0],
+        'valor_entrada': f'{valor_entrada_num:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'valor_entrada_por_extenso': valor_por_extenso(valor_entrada_num),
+        'valor_pos_entrada': f'{valor_pos_entrada_num:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'valor_pos_entrada_por_extenso': valor_por_extenso(valor_pos_entrada_num),
     }
     # Gerar PDF
     env = Environment(loader=FileSystemLoader(os.path.dirname('termo_template.html')))

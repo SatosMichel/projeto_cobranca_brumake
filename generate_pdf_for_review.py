@@ -39,6 +39,11 @@ def _normalize_credor(row):
     return (nome, cnpj, endereco)
 
 
+def _normalize_parte(row):
+    # reutiliza a lógica de normalização do credor para devedores/credores
+    return _normalize_credor(row)
+
+
 def generate():
     # get last acordo
     conn = sqlite3.connect(DB_ACORDOS)
@@ -63,16 +68,35 @@ def generate():
             devedor = c.fetchone()
         except Exception:
             devedor = None
-    if codigo_credor:
+    def _fetch_credor_by_code(cursor, code):
         try:
-            c.execute('SELECT nome, cnpj, endereco FROM credores WHERE codigo = ? OR rowid = ?', (str(codigo_credor), str(codigo_credor)))
-            credor = c.fetchone()
+            cursor.execute("PRAGMA table_info(credores)")
+            cols = [r[1] for r in cursor.fetchall()]
+            if 'codigo' in cols:
+                cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE codigo = ? LIMIT 1', (str(code),))
+                return cursor.fetchone()
+            if 'codigo_credor' in cols:
+                cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE codigo_credor = ? LIMIT 1', (str(code),))
+                return cursor.fetchone()
+            try:
+                cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE rowid = ? LIMIT 1', (str(code),))
+                return cursor.fetchone()
+            except Exception:
+                pass
+            cursor.execute('SELECT nome, cnpj, endereco FROM credores WHERE nome LIKE ? LIMIT 1', (f'%{code}%',))
+            return cursor.fetchone()
         except Exception:
-            credor = None
+            return None
+
+    if codigo_credor:
+        credor = _fetch_credor_by_code(c, codigo_credor)
+
     if not credor:
         try:
-            c.execute('SELECT nome, cnpj, endereco FROM credores LIMIT 1')
-            credor = c.fetchone()
+            c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='credores'")
+            if c.fetchone():
+                c.execute('SELECT nome, cnpj, endereco FROM credores LIMIT 1')
+                credor = c.fetchone()
         except Exception:
             credor = None
     conn.close()
@@ -83,9 +107,19 @@ def generate():
     except Exception:
         cnpj_credor_fmt = cnpj_credor_raw or ''
 
-    nome_devedor = devedor[0] if devedor else row[1]
-    cnpj_devedor = formatar_cnpj(devedor[1]) if devedor and len(devedor) > 1 else ''
-    endereco_devedor = devedor[2] if devedor and len(devedor) > 2 else ''
+    # Normalizar devedor (caso import mal formatada tenha deslocado campos)
+    if devedor:
+        nome_devedor_raw, cnpj_devedor_raw, endereco_devedor_raw = _normalize_parte(devedor)
+        nome_devedor = nome_devedor_raw or (devedor[0] if devedor else row[1])
+        try:
+            cnpj_devedor = formatar_cnpj(cnpj_devedor_raw) if cnpj_devedor_raw else ''
+        except Exception:
+            cnpj_devedor = cnpj_devedor_raw or ''
+        endereco_devedor = endereco_devedor_raw or (devedor[2] if len(devedor) > 2 else '')
+    else:
+        nome_devedor = row[1]
+        cnpj_devedor = ''
+        endereco_devedor = ''
 
     # parcelas
     conn = sqlite3.connect(DB_ACORDOS)

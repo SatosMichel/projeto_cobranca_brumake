@@ -1,70 +1,136 @@
 {% extends 'base.html' %}
 {% block title %}Aprovação de Usuários{% endblock %}
 {% block content %}
-    <h1>Aprovação de Usuários</h1>
-    <table border="1" style="width:100%;margin-bottom:24px;border-color:#F28A1C;">
-        <tr style="background:#F28A1C;color:#fff;">
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Usuário</th>
-            <th>Status</th>
-            <th>Ativo</th>
-            <th>Ações</th>
-        </tr>
-        {% for usuario in usuarios %}
-        <tr>
-            <td>{{ usuario[0] }}</td>
-            <td>{{ usuario[1] }}</td>
-            <td>{{ usuario[2] }}</td>
-            <td>{{ usuario[3] }}</td>
-            <td>{{ usuario[4] }}</td>
-            <td>
-                <div class="button-row">
-                {% if usuario[2] != 'sup' %}
-                    {% if usuario[3] == 'pendente' %}
-                        <form method="post" action="/aprovar_usuario/{{ usuario[0] }}" style="display:inline;">
-                            <button type="submit">Aprovar</button>
-                        </form>
-                    {% endif %}
-                    {% if usuario[3] != 'bloqueado' %}
-                        <form method="post" action="/bloquear_usuario/{{ usuario[0] }}" style="display:inline;">
-                            <button type="submit" style="background:#F28A1C;color:#fff;">Bloquear</button>
-                        </form>
-                    {% else %}
-                        <form method="post" action="/aprovar_usuario/{{ usuario[0] }}" style="display:inline;">
-                            <button type="submit">Liberar</button>
-                        </form>
-                    {% endif %}
-                    <form method="post" action="/alternar_ativo/{{ usuario[0] }}" style="display:inline;">
-                        <button type="submit">Ativo: {% if usuario[4] == 'sim' %}Sim{% else %}Não{% endif %}</button>
-                        <input type="hidden" name="novo_status" value="{% if usuario[4] == 'sim' %}não{% else %}sim{% endif %}">
-                    </form>
-                {% endif %}
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <h2 style="text-align:center;border-bottom:2px solid #F28A1C;">Usuários Logados</h2>
-    <table border="1" style="width:100%;border-color:#F28A1C;">
-        <tr style="background:#F28A1C;color:#fff;">
-            <th>Nome</th>
-            <th>Usuário</th>
-            <th>Último acesso</th>
-            <th>Tempo logado</th>
-        </tr>
-        {% for acesso in acessos %}
-        <tr>
-            <td>{{ acesso[0] }}</td>
-            <td>{{ acesso[1] }}</td>
-            <td>{{ acesso[2] }}</td>
-            <td>{{ acesso[3] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <div class="button-row" style="justify-content:center;margin-top:24px;">
-        <form action="/logout" method="get">
-            <button type="submit">Sair</button>
-        </form>
+    <style>
+        .card { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+        .title { text-align: center; color:#215132; margin-bottom: 12px; }
+        .divider { height:2px; background:#F28A1C; margin:12px 0 18px 0; }
+        table.users { width:100%; border-collapse: collapse; margin-bottom: 18px; }
+        table.users th, table.users td { padding: 10px 12px; border: 1px solid #F28A1C; vertical-align: middle; }
+        table.users th { background:#F28A1C; color:#fff; text-align:left; }
+        .actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .btn { padding:8px 14px; border-radius:6px; border:none; cursor:pointer; font-weight:700; }
+    .btn-approve { background:#215132; color:#fff; }
+        .btn-block { background:#F28A1C; color:#fff; }
+        .btn-neutral { background:#e9ecef; color:#333; }
+        .status-pill { display:inline-block; padding:6px 8px; border-radius:999px; font-size:12px; background:#e9f7ef; color:#1e8449; }
+        .table-footer { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:8px; }
+        @media (max-width:820px){
+            .actions { flex-direction:column; }
+            table.users th, table.users td { font-size:13px; }
+        }
+        .btn-perm-on { background:#215132; color:#fff; }
+        .btn-perm-off { background:#e9ecef; color:#333; }
+    </style>
+
+    <div class="card">
+        <h1 class="title">Aprovação de Usuários</h1>
+        <div class="divider"></div>
+
+        <table class="users">
+            <thead>
+                <tr>
+                    <th style="width:48px;">ID</th>
+                    <th>Nome</th>
+                    <th style="width:120px;">Usuário</th>
+                    <th style="width:120px;">Status</th>
+                    <th style="width:90px;">Ativo</th>
+                    <th style="width:260px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario[0] }}</td>
+                    <td>{{ usuario[1] }}</td>
+                    <td>{{ usuario[2] }}</td>
+                    <td>{% if usuario[3] == 'pendente' %}<span class="status-pill">Pendente</span>{% elif usuario[3] == 'aprovado' %}<span class="status-pill" style="background:#fff3e0;color:#d35400;">Aprovado</span>{% else %}{{ usuario[3] }}{% endif %}</td>
+                    <td>{% if usuario[4] == 'sim' %}Sim{% else %}Não{% endif %}</td>
+                    <td>
+                        <div class="actions">
+                        {% if usuario[2] != 'sup' %}
+                            {% if usuario[3] == 'pendente' %}
+                            <form method="post" action="/aprovar_usuario/{{ usuario[0] }}">
+                                <button class="btn btn-approve" type="submit">Aprovar</button>
+                            </form>
+                            {% endif %}
+
+                            {% if usuario[3] != 'bloqueado' %}
+                            <form method="post" action="/bloquear_usuario/{{ usuario[0] }}">
+                                <button class="btn btn-block" type="submit">Bloquear</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="/aprovar_usuario/{{ usuario[0] }}">
+                                <button class="btn btn-neutral" type="submit">Liberar</button>
+                            </form>
+                            {% endif %}
+
+                            <form method="post" action="/alternar_ativo/{{ usuario[0] }}">
+                                <input type="hidden" name="novo_status" value="{% if usuario[4] == 'sim' %}não{% else %}sim{% endif %}">
+                                <button class="btn btn-neutral" type="submit">Ativo: {% if usuario[4] == 'sim' %}Sim{% else %}Não{% endif %}</button>
+                            </form>
+
+                            <form method="post" action="/alternar_permissao_cadastro/{{ usuario[0] }}">
+                                <button class="btn {% if usuario[5] == 'sim' %}btn-perm-on{% else %}btn-perm-off{% endif %}" type="submit">Permissão: {% if usuario[5] == 'sim' %}Sim{% else %}Não{% endif %}</button>
+                            </form>
+                        {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <h2 style="text-align:center;margin-top:8px;color:#215132;">Usuários Logados</h2>
+        <div class="divider" style="margin-bottom:8px;"></div>
+
+        <table class="users">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Usuário</th>
+                    <th>Último acesso</th>
+                    <th>Tempo logado</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for acesso in acessos %}
+                <tr>
+                    <td>{{ acesso[0] }}</td>
+                    <td>{{ acesso[1] }}</td>
+                    <td>{{ acesso[2] }}</td>
+                    <td>{{ acesso[3] }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="table-footer">
+            <div></div>
+            <div>
+                <form action="/logout" method="get" style="display:inline-block;">
+                    <button class="btn btn-approve" type="submit">Sair</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="mensagem" style="text-align:center;margin-top:12px;color:#215132;"></div>
     </div>
+
+    <script>
+    function confirmarAcao(e, msg){
+        if(!confirm(msg)){
+            e.preventDefault();
+            return false;
+        }
+        const m = document.getElementById('mensagem');
+        m.textContent = 'Ação enviada. Atualize a página para ver o resultado.';
+        setTimeout(()=> m.textContent = '', 5000);
+        return true;
+    }
+    document.querySelectorAll('form[action^="/bloquear_usuario"]').forEach(f=> f.addEventListener('submit', function(e){ confirmarAcao(e, 'Deseja realmente bloquear este usuário?'); }));
+    document.querySelectorAll('form[action^="/aprovar_usuario"]').forEach(f=> f.addEventListener('submit', function(e){ confirmarAcao(e, 'Deseja realmente aprovar este usuário?'); }));
+    document.querySelectorAll('form[action^="/alternar_permissao_cadastro"]').forEach(f=> f.addEventListener('submit', function(e){ confirmarAcao(e, 'Deseja alternar a permissão de cadastro deste usuário?'); }));
+    document.querySelectorAll('form[action^="/alternar_ativo"]').forEach(f=> f.addEventListener('submit', function(e){ confirmarAcao(e, 'Deseja alternar o estado Ativo deste usuário?'); }));
+    </script>
 {% endblock %}

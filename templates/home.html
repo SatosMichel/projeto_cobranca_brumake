@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Início{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:80px;">
+    <h1>Bem-vindo</h1>
+    <div style="margin-top:24px;display:flex;gap:16px;">
+        <form action="/cliente" method="get">
+            <button type="submit" style="padding:12px 24px;font-size:16px;">Começar acordo</button>
+        </form>
+        {% if pode_cadastrar %}
+        <form action="/cadastrar_devedor" method="get">
+            <button type="submit" style="padding:12px 24px;font-size:16px;">Cadastrar devedor</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% if request.args.get('cadastro_sucesso') == '1' %}
+<div id="toast" style="position:fixed;top:20px;right:20px;background:#1e8449;color:#fff;padding:12px 18px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+    Devedor cadastrado com sucesso!
+</div>
+<script>
+setTimeout(function(){
+    var t = document.getElementById('toast');
+    if(t){ t.style.transition = 'opacity 0.6s'; t.style.opacity = '0'; setTimeout(()=> t.remove(), 700); }
+}, 4000);
+</script>
+{% endif %}
+{% endblock %}
