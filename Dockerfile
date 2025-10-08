@@ -3,6 +3,13 @@ FROM python:3.11-slim
 # Instala dependências do sistema necessárias para xhtml2pdf/reportlab
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    pkg-config \
+    libcairo2-dev \
+    libffi-dev \
+    meson \
+    ninja-build \
+    libpango1.0-dev \
+    libgirepository1.0-dev \
     libfreetype6-dev \
     libjpeg-dev \
     zlib1g-dev \

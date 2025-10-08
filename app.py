@@ -24,6 +24,40 @@ def login_required(f):
     return decorated_function
 
 
+def calcular_parcelas_price(pv, taxa_percentual, n):
+    """Calcula a lista de parcelas pelo sistema Price (PMT).
+    pv: valor presente (float)
+    taxa_percentual: taxa mensal em porcentagem (ex: 2.0 para 2%)
+    n: número de parcelas (int)
+    Retorna lista de n floats (valores das parcelas, arredondados a 2 decimais).
+    """
+    try:
+        pv = float(pv)
+    except Exception:
+        return [0.0] * max(0, int(n))
+    try:
+        n = int(n)
+    except Exception:
+        return [0.0]
+    if n <= 0:
+        return []
+    i = float(taxa_percentual) / 100.0
+    if i == 0:
+        # Juros zero: parcelas iguais simples
+        base = round(pv / n, 2)
+        return [base] * n
+    factor = (1 + i) ** n
+    # fórmula do PMT: pv * (i * (1+i)^n) / ((1+i)^n - 1)
+    pmt = pv * (i * factor) / (factor - 1)
+    # arredondar cada parcela e ajustar última para corrigir diferenças de arredondamento
+    parcelas = [round(pmt, 2) for _ in range(n)]
+    soma = round(sum(parcelas), 2)
+    diferenca = round(round(pmt * n, 2) - soma, 2)
+    if diferenca != 0 and len(parcelas) > 0:
+        parcelas[-1] = round(parcelas[-1] + diferenca, 2)
+    return parcelas
+
+
 # Rota para listar todos os credores (usada pelo select no frontend)
 @app.route('/listar_credor')
 def listar_credor():
@@ -238,13 +272,14 @@ def parcelas_juros():
             valor REAL
         )''')
 
-        # Calcular valor de cada parcela
+        # Calcular valor de cada parcela usando sistema Price (PMT)
         valor_base = session.get('valor_juros', 0) - session.get('valor_entrada', 0)
-        parcela_fixa = valor_base / parcelas if parcelas > 0 else 0
+        parcelas_values = calcular_parcelas_price(valor_base, taxa_juros_mensal, parcelas)
         for idx, data in enumerate(datas_parcelas, start=1):
-            juros_parcela = parcela_fixa * (taxa_juros_mensal / 100) * idx
-            valor_parcela = parcela_fixa + juros_parcela
-            valor_parcela = round(valor_parcela, 2)
+            try:
+                valor_parcela = parcelas_values[idx - 1]
+            except Exception:
+                valor_parcela = 0.0
             cursor.execute('INSERT INTO parcelas (acordo_id, numero, data, valor) VALUES (?, ?, ?, ?)',
                            (acordo_id, idx, data, valor_parcela))
         conn.commit()
@@ -273,17 +308,9 @@ def resumo():
     valor_base = valor_juros - valor_entrada if entrada == 'sim' else valor_juros
     valor_pos_entrada = valor_base
 
-    # Cálculo das parcelas considerando juros mensal
-    lista_parcelas = []
-    valor_total_parcelas = 0
-    parcela_fixa = valor_base / parcelas if parcelas > 0 else 0
-    for i in range(1, parcelas + 1):
-        juros_parcela = parcela_fixa * (taxa_juros_mensal / 100) * i
-        valor_parcela = parcela_fixa + juros_parcela
-        valor_parcela = round(valor_parcela, 2)
-        lista_parcelas.append(valor_parcela)
-        valor_total_parcelas += valor_parcela
-    valor_total_parcelas = round(valor_total_parcelas, 2)
+    # Cálculo das parcelas considerando juros mensal usando Price
+    lista_parcelas = calcular_parcelas_price(valor_base, taxa_juros_mensal, parcelas)
+    valor_total_parcelas = round(sum(lista_parcelas), 2)
 
     if request.method == 'POST':
         # Salva no banco de dados todos os dados relevantes
@@ -842,9 +869,12 @@ def gerar_instrumento(acordo_id):
                     data_inicio = datetime.strptime(row[10], '%Y-%m-%d')
                 except Exception:
                     data_inicio = None
+            try:
+                price_vals = calcular_parcelas_price(valor_base, taxa_mensal, parcelas_qtd)
+            except Exception:
+                price_vals = [0.0] * parcelas_qtd
             for i in range(1, parcelas_qtd + 1):
-                juros_parcela = parcela_fixa * (taxa_mensal / 100) * i
-                valor_parcela = round(parcela_fixa + juros_parcela, 2)
+                valor_parcela = round(price_vals[i - 1], 2) if i - 1 < len(price_vals) else 0.0
                 if data_inicio:
                     venc = (data_inicio + timedelta(days=30 * i)).strftime('%d/%m/%Y')
                 else:
