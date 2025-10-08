@@ -1,3 +1,4 @@
 Flask
 xhtml2pdf
 Jinja2
+gunicorn
