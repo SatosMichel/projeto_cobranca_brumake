@@ -422,17 +422,43 @@ def acordo_detalhe(acordo_id):
                 conn2.close()
             except Exception:
                 pass
-        parcela_fixa = acordo['valor_base'] / acordo['parcelas'] if acordo['parcelas'] > 0 else 0
-        lista_parcelas = []
-        for i in range(1, acordo['parcelas'] + 1):
-            juros_parcela = parcela_fixa * (acordo['taxa_juros_mensal'] / 100) * i
-            valor_parcela = parcela_fixa + juros_parcela
-            valor_parcela = round(valor_parcela, 2)
-            lista_parcelas.append(valor_parcela)
-        acordo['lista_parcelas'] = lista_parcelas
-        acordo['valor_total_parcelas'] = sum(lista_parcelas)
-        # Recupera datas das parcelas da sessão (para novos acordos)
-        acordo['datas_parcelas'] = session.get('datas_parcelas', [''] * acordo['parcelas'])
+        # Primeiro, tentar recuperar parcelas gravadas na tabela 'parcelas'
+        try:
+            conn_p = sqlite3.connect('acordos.db')
+            c_p = conn_p.cursor()
+            c_p.execute('SELECT numero, valor, data FROM parcelas WHERE acordo_id = ? ORDER BY numero', (acordo['id'],))
+            parcelas_rows = c_p.fetchall()
+            conn_p.close()
+        except Exception:
+            parcelas_rows = []
+
+        if parcelas_rows:
+            lista_parcelas = []
+            datas = []
+            for r in parcelas_rows:
+                try:
+                    numero, valor, data_v = r
+                    lista_parcelas.append(float(valor))
+                    datas.append(data_v or '')
+                except Exception:
+                    # fallback caso o registro esteja corrompido
+                    pass
+            acordo['lista_parcelas'] = [round(v, 2) for v in lista_parcelas]
+            acordo['valor_total_parcelas'] = round(sum(acordo['lista_parcelas']), 2)
+            acordo['datas_parcelas'] = datas
+        else:
+            # Se não houver parcelas salvas, gerar via Price (fallback)
+            try:
+                valor_base_local = acordo['valor_base']
+                taxa_local = acordo['taxa_juros_mensal']
+                qtd_local = acordo['parcelas']
+                price_vals = calcular_parcelas_price(valor_base_local, taxa_local, qtd_local)
+            except Exception:
+                price_vals = [0.0] * (acordo['parcelas'] if acordo['parcelas'] else 0)
+            acordo['lista_parcelas'] = [round(v, 2) for v in price_vals]
+            acordo['valor_total_parcelas'] = round(sum(acordo['lista_parcelas']), 2)
+            # Recupera datas das parcelas da sessão (para novos acordos)
+            acordo['datas_parcelas'] = session.get('datas_parcelas', [''] * acordo['parcelas'])
         return render_template('acordo_detalhe.html', acordo=acordo)
     else:
         return 'Acordo não encontrado', 404
