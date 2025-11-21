@@ -15,8 +15,14 @@
         <tr><td>Valor após entrada</td><td>R$ {{ '%.2f' % acordo['valor_base'] }}</td></tr>
     <tr><td>Taxa de juros diária</td><td>{{ acordo['taxa_juros_diaria'] }}%</td></tr>
     <tr><td>Taxa de juros mensal</td><td>{{ acordo['taxa_juros_mensal'] }}%</td></tr>
+        <tr>
+            <td colspan="2">
+                O cliente informou a primeira data de pagamento: <strong>{% if acordo['data_primeira_parcela'] %}{{ acordo['data_primeira_parcela'] }}{% elif acordo['datas_parcelas'] and acordo['datas_parcelas'][0] %}{{ acordo['datas_parcelas'][0].split('-')[2] }}/{{ acordo['datas_parcelas'][0].split('-')[1] }}/{{ acordo['datas_parcelas'][0].split('-')[0] }}{% else %}----/--/----{% endif %}</strong>.
+                As demais parcelas vencerão a cada 30 dias após a parcela anterior.
+            </td>
+        </tr>
         {% for valor in acordo['lista_parcelas'] %}
-        <tr><td>{{ loop.index }} parcela</td><td>R$ {{ '%.2f' % valor }} {% if acordo['datas_parcelas'] and acordo['datas_parcelas'][loop.index0] %}<br>Data: {{ acordo['datas_parcelas'][loop.index0].split('-')[2] }}/{{ acordo['datas_parcelas'][loop.index0].split('-')[1] }}/{{ acordo['datas_parcelas'][loop.index0].split('-')[0] }}{% endif %}</td></tr>
+        <tr><td>{{ loop.index }} parcela</td><td>R$ {{ '%.2f' % valor }}</td></tr>
         {% endfor %}
         <tr><th>Valor total das parcelas</th><th>R$ {{ '%.2f' % acordo['valor_total_parcelas'] }}</th></tr>
     </table>

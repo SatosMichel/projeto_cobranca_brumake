@@ -46,20 +46,22 @@
     }));
     </script>
     <h2>Parcelas Detalhadas</h2>
+    <p>
+        O cliente informará a primeira data de pagamento: <strong>{% if data_primeira_parcela %}{{ data_primeira_parcela }}{% elif datas_parcelas and datas_parcelas[0] %}{{ datas_parcelas[0].split('-')[2] }}/{{ datas_parcelas[0].split('-')[1] }}/{{ datas_parcelas[0].split('-')[0] }}{% else %}____/____/____{% endif %}</strong>.
+        As demais parcelas vencerão a cada 30 (trinta) dias após a parcela anterior.
+    </p>
     <table border="1" style="width:100%;border-color:#F28A1C;">
         <tr style="background:#F28A1C;color:#fff;">
             <th>Nº Parcela</th>
             <th>Valor</th>
-            <th>Data de Vencimento</th>
         </tr>
         {% for parcela in parcelas %}
         <tr>
             <td>{{ loop.index }}</td>
             <td>R$ {{ '%.2f' % parcela }}</td>
-            <td>{% if datas_parcelas and datas_parcelas[loop.index0] %}{{ datas_parcelas[loop.index0].split('-')[2] }}/{{ datas_parcelas[loop.index0].split('-')[1] }}/{{ datas_parcelas[loop.index0].split('-')[0] }}{% endif %}</td>
         </tr>
         {% endfor %}
-        <tr><th colspan="2">Valor total das parcelas</th><th>R$ {{ '%.2f' % valor_total_parcelas }}</th></tr>
+        <tr><th>Valor total das parcelas</th><th>R$ {{ '%.2f' % valor_total_parcelas }}</th></tr>
     </table>
     <div style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
         <form method="post" style="margin:0;">

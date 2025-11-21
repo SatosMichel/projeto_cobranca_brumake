@@ -15,8 +15,10 @@
         .dados { margin-bottom: 8px; }
         ul { margin: 6px 0 8px 18px; padding: 0; }
         li { margin: 4px 0; }
-        /* Assinaturas e testemunhas com espaçamento maior (títulos/rodapé) */
-        .assinaturas { margin-top: 40px; display: flex; justify-content: space-between; }
+    /* Assinaturas e testemunhas com espaçamento maior (títulos/rodapé) */
+    .assinaturas { margin-top: 40px; display: flex; justify-content: space-between; }
+    /* Evita quebra de página entre a 3ª cláusula e as assinaturas */
+    .clausula.terceira, .assinaturas, .testemunhas { page-break-inside: avoid; break-inside: avoid; }
         .assinatura { width: 45%; text-align: center; }
         /* Testemunhas: duas colunas com alinhamento similar às assinaturas */
         .testemunhas { margin-top: 28px; display: flex; justify-content: space-between; }
@@ -53,10 +55,13 @@
         <strong>CLÁUSULA SEGUNDA – DA FORMA DE PAGAMENTO</strong>
         <p>2.1. O DEVEDOR se compromete a pagar a dívida descrita na Cláusula Primeira da seguinte forma:</p>
         <ul>
-            <li>Em {{ parcelas_quantidade }} parcelas mensais e consecutivas, nos seguintes valores e datas:</li>
+            <li>Em {{ parcelas_quantidade }} parcelas mensais e consecutivas, nos seguintes valores:</li>
             {% for parcela in parcelas %}
-            <li>{{ parcela.numero }}ª parcela de R$ {{ parcela.valor }} ({{ parcela.valor_por_extenso }}) com vencimento em: {{ parcela.data_vencimento }}</li>
+            <li>{{ parcela.numero }}ª parcela de R$ {{ parcela.valor }} ({{ parcela.valor_por_extenso }})</li>
             {% endfor %}
+            <li>Taxa de juros aplicada para cálculo das parcelas: {% if taxa_juros_mensal %}{{ taxa_juros_mensal }}% ao mês{% else %}---{% endif %}.</li>
+            <li>O cliente informará a primeira data de pagamento. As demais parcelas vencerão a cada 30 (trinta) dias após a parcela anterior. Ex.: se a 1ª parcela for em <strong>{% if data_primeira_parcela %}{{ data_primeira_parcela }}{% elif parcelas and parcelas[0].data_vencimento %}{{ parcelas[0].data_vencimento }}{% else %}____/____/____{% endif %}</strong>, as próximas serão 30 dias após a anterior (por exemplo: 20/12/2025, 19/01/2026, ...).</li>
+            <li>Pagamentos cujo vencimento ocorrer em finais de semana ou feriados poderão ser efetuados no primeiro dia útil subsequente.</li>
             <li><strong>O valor total a ser pago será de R$ {{ parcelas_total }}, {{ parcelas_total_por_extenso }}.</strong></li>
             <li>Os pagamentos serão efetuados por {{ forma_pagamento }}.</li>
             {% if forma_pagamento == 'Pix' %}
@@ -70,6 +75,10 @@
 
     <div class="clausula">
         <strong>CLÁUSULA TERCEIRA – DA MORA E MULTA</strong>
+        <!-- marcada como 'terceira' para evitar quebra de página separando cláusula das assinaturas -->
+    </div>
+
+    <div class="clausula terceira">
         <p>3.1. O não pagamento de qualquer parcela na data de seu vencimento implicará na incidência de:</p>
         <ul>
             <li>Multa moratória de {{ percentual_multa }} ({{ percentual_multa_por_extenso }}) sobre o valor da parcela inadimplida, em caso de atraso no pagamento.</li>
